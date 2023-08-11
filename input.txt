@@ -1,0 +1,15 @@
+NROWS = 3                   # Number of rows in card
+NCOLS = 9                   # Number of columns in card
+
+N_PLAYERS = 10              # Number of bingo players
+N_SONGS_CARD = 12           # Number of songs per bingo card
+N_IMAGES_CARD = 10          # Number of images per bingo card
+
+WIDTH = 16                  # Width of bingo card (X, in pixels or aspect ratio)
+HEIGHT = 7                  # Height of bingo card (Y, in pixels or aspect ratio)
+TIMES = 200                 # Multiplier of width and height [Defaults to 1]
+
+IMG_FOLDER = "img/"         # Images folder [Defaults to "./img/"]
+SONGS_FILE = "songs.txt"    # Song list file, with format artist - song [Defaults to "songs.txt"]
+OUTPUT_FOLDER = "bills/"    # Output folder where the card images will be created [Defaults to "./bills/"]
+
