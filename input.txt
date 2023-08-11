@@ -9,7 +9,10 @@ WIDTH = 16                  # Width of bingo card (X, in pixels or aspect ratio)
 HEIGHT = 7                  # Height of bingo card (Y, in pixels or aspect ratio)
 TIMES = 200                 # Multiplier of width and height [Defaults to 1]
 
-IMG_FOLDER = "img/"         # Images folder [Defaults to "./img/"]
-SONGS_FILE = "songs.txt"    # Song list file, with format artist - song [Defaults to "songs.txt"]
-OUTPUT_FOLDER = "bills/"    # Output folder where the card images will be created [Defaults to "./bills/"]
+IMG_FOLDER = img/           # Images folder [Defaults to "./img/"]
+SONGS_FILE = songs.txt      # Song list file, with format artist - song [Defaults to "songs.txt"]
+OUTPUT_FOLDER = bills/      # Output folder where the card images will be created [Defaults to "./bills/"]
 
+BG_COLOUR = white           # Background colour of the bingo card
+FILLS = blue,red,blue       # Fill background colours of the bingo card (rounded rectangles)
+EDGES = same                # Edge colours of the bingo card (rounded rectangles). Can be colours or "same" (same as FILLS) [Defaults to "same"]
