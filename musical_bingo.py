@@ -70,7 +70,7 @@ def add_corners(im, rad=100):
 def tile_to_image(image,tile_path,rectangular_area):
     """Adds tile of bingo card to the image card."""
 
-    tile = Image.open(img_folder+tile_path).convert("RGBA")
+    tile = Image.open(tile_path).convert("RGBA")
     # tile = add_corners(tile, 500)
     rectangular_area = np.array(rectangular_area).astype(int)
 
@@ -319,7 +319,7 @@ def read_song_fie(song_file):
 
 
 def read_input(input_file):
-    """Reads and parses song file"""  
+    """Reads and parses input file"""  
     parameters = {}
     with open(input_file,"r") as inFile: 
         for line in inFile:
@@ -349,47 +349,69 @@ def ensure_elements_present(bills, required_elements):
         bills[i] = input_list
     return bills
 
+
+########################################################################################################
+#########################################   MAIN PROGRAM   #############################################
+########################################################################################################
+
 to = time.time()
 
-N_SONGS = 50
+input_file = "input.txt"
+
 BLAU = (0,77,152)
 GRANA = (165,0,68)
 LBLUE = (175,215,255)
 
-# User input
-N_PLAYERS = 20
-N_SONGS_CARD = 12
-N_IMAGES_CARD = 10
-NROWS, NCOLS = 3, 9
+####################   READING USER INPUT   ####################
+parameters = read_input(input_file)
 
-fills = [BLAU,GRANA,BLAU]
-edges = [BLAU,GRANA,BLAU]
+# Card structure
+NROWS, NCOLS = int(parameters.get("NROWS",3)), int(parameters.get("NCOLS",10))
+N_PLAYERS = int(parameters.get("N_PLAYERS",10))
+N_SONGS_CARD = int(parameters.get("N_SONGS_CARD",12))
+N_IMAGES_CARD = int(parameters.get("N_IMAGES_CARD",0))
 
-times = 20
-WIDTH, HEIGHT = 160*times,70*times
+# Card image format
+TIMES = int(parameters.get("TIMES",1))
+WIDTH, HEIGHT = int(parameters.get("WIDTH",3200))*TIMES, int(parameters.get("HEIGHT",3200))*TIMES
 
-img_folder = "./img/"
-img_list = os.listdir(img_folder)
-# Song list parsing
-SONGS_FILE = "song_list.txt"
-OUTPUT_FOLDER = "./bills/"
+# Card colour format
+BG_COLOUR = parameters.get("BG_COLOUR","white")
+FILLS = [BLAU,GRANA,BLAU]
+EDGES = [BLAU,GRANA,BLAU]
 
+# I/O files
+IMG_FOLDER = parameters.get("IMG_FOLDER","./img/")
+IMG_FOLDER = IMG_FOLDER if IMG_FOLDER.endswith("/") else IMG_FOLDER + "/"
+
+SONGS_FILE = parameters.get("SONGS_FILE","songs.txt")
+OUTPUT_FOLDER = parameters.get("OUTPUT_FOLDER","./bills/")
+
+
+####################   PARSING INPUT and PREPARATION   ####################
+
+img_list = [IMG_FOLDER + img for img in os.listdir(IMG_FOLDER)]
 song_list = read_song_fie(SONGS_FILE)
 
 songs_per_bill = generate_sublists(song_list, N_PLAYERS, N_SONGS_CARD)
 images_per_bill = generate_sublists(img_list,N_PLAYERS,N_IMAGES_CARD)
 
 required_images = ["fran.jpg","raquel.jpg","emma.jpg"]
+if not required_images[0].startswith(IMG_FOLDER): required_images = [IMG_FOLDER + i for i in required_images]
+
 images_per_bill = ensure_elements_present(images_per_bill, required_images)
 
 try: os.mkdir(OUTPUT_FOLDER)
 except FileExistsError: pass
 
-for i in range(N_PLAYERS):
-    bg_colour = "white"
-    image = Image.new("RGBA", (WIDTH, HEIGHT), bg_colour)
 
-    image, metadata = background(image,fills,edges)
+####################   CARD CREATION LOOP   ####################
+
+print("Cards generated: ",flush=True, end="")
+for i in range(N_PLAYERS):
+    image = Image.new("RGBA", (WIDTH, HEIGHT), BG_COLOUR)
+
+    image, metadata = background(image,FILLS,EDGES)
 
     song_list_i = songs_per_bill[i]
     img_list = images_per_bill[i]
@@ -401,11 +423,10 @@ for i in range(N_PLAYERS):
     image = grid.draw()
     image.save(f"{OUTPUT_FOLDER}/bill{i}.png",dpi=(1200,1200))
 
+    print(i+1,flush=True, end=" ")
+
+
 tf = time.time()
 print(f"\nProcess finished in {tf-to:.2f}s")
-
-
-
-
 
 
