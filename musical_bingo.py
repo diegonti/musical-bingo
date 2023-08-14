@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 import textwrap
 
+from argparse import ArgumentParser
 import numpy as np
 import random
 import time
@@ -256,19 +257,22 @@ def check_repeated(list,sublists,song_list,N_SONGS_BILL):
     return list
 
 
-def generate_sublists(song_list, N, M):
+def generate_sublists(big_list, N, M):
     """Generates N random sampled sublists of lenght M, from a larger list of songs."""
 
     # Create a list to store the sublists
     sublists = []
 
     # Shuffle the big list to randomize the order of elements
-    random.shuffle(song_list)
+    random.shuffle(big_list)
 
     # Divide the big list into N sublists of M elements each
     for i in range(N):
-        sublist = random.sample(song_list, M)
-        sublist = check_repeated(sublist,sublists,song_list,M)
+        if M == 0:
+            sublist = []
+        else:
+            sublist = random.sample(big_list, M)
+            sublist = check_repeated(sublist,sublists,big_list,M)
 
         sublists.append(sublist)
 
@@ -356,11 +360,17 @@ def ensure_elements_present(bills, required_elements):
 
 to = time.time()
 
-input_file = "input.txt"
-
 BLAU = (0,77,152)
 GRANA = (165,0,68)
 LBLUE = (175,215,255)
+
+# Parsing user arguments
+parser = ArgumentParser(
+    description = "Generates bingo cards for playing musical bingo. The cards have songs and images from the given lists.")
+parser.add_argument("file",type=str,nargs="?",help="Input file path. (Searches for input.txt if not present)",default="input.txt")
+
+args = parser.parse_args()
+input_file = args.file
 
 ####################   READING USER INPUT   ####################
 parameters = read_input(input_file)
@@ -374,6 +384,7 @@ N_IMAGES_CARD = int(parameters.get("N_IMAGES_CARD",0))
 # Card image format
 TIMES = int(parameters.get("TIMES",1))
 WIDTH, HEIGHT = int(parameters.get("WIDTH",3200))*TIMES, int(parameters.get("HEIGHT",3200))*TIMES
+DPI = int(parameters.get("DPI",600))
 
 # Card colour format
 BG_COLOUR = parameters.get("BG_COLOUR","white")
@@ -398,8 +409,7 @@ images_per_bill = generate_sublists(img_list,N_PLAYERS,N_IMAGES_CARD)
 
 required_images = ["fran.jpg","raquel.jpg","emma.jpg"]
 if not required_images[0].startswith(IMG_FOLDER): required_images = [IMG_FOLDER + i for i in required_images]
-
-images_per_bill = ensure_elements_present(images_per_bill, required_images)
+if not N_IMAGES_CARD == 0: images_per_bill = ensure_elements_present(images_per_bill, required_images)
 
 try: os.mkdir(OUTPUT_FOLDER)
 except FileExistsError: pass
@@ -421,7 +431,7 @@ for i in range(N_PLAYERS):
     grid.fill(N_SONGS_CARD,N_IMAGES_CARD)
     # grid.log()
     image = grid.draw()
-    image.save(f"{OUTPUT_FOLDER}/bill{i}.png",dpi=(1200,1200))
+    image.save(f"{OUTPUT_FOLDER}/bill{i}.png",dpi=(DPI,DPI))
 
     print(i+1,flush=True, end=" ")
 
