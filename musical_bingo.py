@@ -6,6 +6,7 @@ import numpy as np
 import random
 import time
 import os
+import ast
 
 
 def text_to_image(image, text,rectangle_area,font_size=30):
@@ -15,7 +16,7 @@ def text_to_image(image, text,rectangle_area,font_size=30):
     draw = ImageDraw.Draw(image)
 
     # Define the default font
-    font = ImageFont.truetype("arial.ttf", font_size)
+    font = ImageFont.truetype("arial.ttf", font_size,encoding="unic")
 
     # Define the rectangle area to add text
     x1, y1, x2, y2 = rectangle_area
@@ -92,7 +93,7 @@ def tile_to_image(image,tile_path,rectangular_area):
 class Rectangle:
     """Class representing a rectangular tile od the bingo card"""
 
-    def __init__(self, xy, text, colour, tile_image,image, type) -> None:
+    def __init__(self, xy, text, colour, edge_colour, tile_image,image, type) -> None:
         self.xy = xy
         self.type = type
         
@@ -100,7 +101,7 @@ class Rectangle:
         self.colour = colour
         self.tile_image = tile_image
         self.image = image
-        self.edge_colour = "white"
+        self.edge_colour = edge_colour
         
     def draw(self):
         """Draws rectangle to main image"""
@@ -174,8 +175,10 @@ class Grid:
         return rect_positions
         
 
-    def fill(self, n_songs, n_img):
+    def fill(self, n_songs, n_img, colours):
         """Fills the grid with the different tiles."""
+
+        bg_fills,tile_fill,tile_edge = colours
 
         ncols,nrows = self.NCOLS,self.NROWS
         total_cells = ncols*nrows
@@ -204,7 +207,7 @@ class Grid:
                 while grid[row][col]:
                     col = random.randint(0, ncols - 1)
                  
-                grid[row][col] = Rectangle(self.positions[row][col],text=self.song_list[count],colour=LBLUE,tile_image="",image=self.image,type="Song")
+                grid[row][col] = Rectangle(self.positions[row][col],text=self.song_list[count],colour=tile_fill,edge_colour=tile_edge,tile_image="",image=self.image,type="Song")
                 self.grid_labels[row][col] = "S"
                 count += 1
 
@@ -213,7 +216,7 @@ class Grid:
             row, col = random.randint(0, nrows - 1), random.randint(0, ncols - 1)
             while grid[row][col]:
                 row, col = random.randint(0, nrows - 1), random.randint(0, ncols - 1)
-            grid[row][col] = Rectangle(self.positions[row][col],text="",colour=None,tile_image=self.img_list[i],image=self.image,type="Image")
+            grid[row][col] = Rectangle(self.positions[row][col],text="",colour=None,edge_colour=tile_edge,tile_image=self.img_list[i],image=self.image,type="Image")
             self.grid_labels[row][col] = "I"
 
         # Randomly distribute class C to the grid
@@ -221,7 +224,7 @@ class Grid:
             row, col = random.randint(0, nrows - 1), random.randint(0, ncols - 1)
             while grid[row][col]:
                 row, col = random.randint(0, nrows - 1), random.randint(0, ncols - 1)
-            grid[row][col] = Rectangle(self.positions[row][col],text="",colour=BLAU,tile_image="",image=self.image,type="Blank")
+            grid[row][col] = Rectangle(self.positions[row][col],text="",colour=bg_fills[-1],edge_colour=tile_edge,tile_image="",image=self.image,type="Blank")
             self.grid_labels[row][col] = "B"
         
         self.grid = grid
@@ -262,6 +265,7 @@ def generate_sublists(big_list, N, M):
 
     # Create a list to store the sublists
     sublists = []
+    big_list = big_list.copy()
 
     # Shuffle the big list to randomize the order of elements
     random.shuffle(big_list)
@@ -313,7 +317,7 @@ def background(image:Image, fills:list, edges:list):
 def read_song_fie(song_file):
     """Reads and parses song file"""  
     song_list = []
-    with open(song_file,"r") as inFile: 
+    with open(song_file,"r",encoding="utf-8") as inFile: 
         for line in inFile:
             data = line.split("-")
             artist,song = data[0].strip(),data[1].strip()
@@ -328,12 +332,30 @@ def read_input(input_file):
     with open(input_file,"r") as inFile: 
         for line in inFile:
             if line.strip() == "": continue
-            elif line.strip().startswith("#"): continue
-            key_value, comment = line.strip().split('#', 1) if '#' in line else (line.strip(), '')
+            elif line.strip().startswith("!"): continue
+            key_value, comment = line.strip().split('!', 1) if '!' in line else (line.strip(), '')
             key, value = key_value.split('=', 1)
             parameters[key.strip()] = value.strip()
 
     return parameters
+
+def parse_fills(FILLS,EDGES):
+    FILLS = FILLS.split("/")
+    for i,fill in enumerate(FILLS):
+        f = fill.strip()
+        if f.startswith("("):
+            f = ast.literal_eval(f)
+        FILLS[i] = f
+
+    if EDGES == "same": EDGES = FILLS
+    else:
+        EDGES = EDGES.split("/")
+        for i,edge in enumerate(EDGES):
+            e = edge.strip()
+            if e.startswith("("):
+                e = ast.literal_eval(e)
+            EDGES[i] = e
+    return FILLS, EDGES
 
 
 def ensure_elements_present(bills, required_elements):
@@ -352,6 +374,24 @@ def ensure_elements_present(bills, required_elements):
                         break
         bills[i] = input_list
     return bills
+
+
+def get_winner(song_list,songs_per_bill,OUTPUT_FOLDER):
+    print("\n")
+    for i,song in enumerate(song_list):
+        for j,card in enumerate(songs_per_bill):
+            if song in card:
+                songs_per_bill[j].remove(song)
+
+        lens = [len(card) for card in songs_per_bill]
+        if 0 in lens:
+            print(lens)
+            winner = lens.index(0)
+            break
+
+    print(f"Winner = bill{winner}")
+    with open(OUTPUT_FOLDER + "winner.txt","w") as outFile:
+        outFile.write(f"Winner = bill{winner}")
 
 
 ########################################################################################################
@@ -383,13 +423,15 @@ N_IMAGES_CARD = int(parameters.get("N_IMAGES_CARD",0))
 
 # Card image format
 TIMES = int(parameters.get("TIMES",1))
-WIDTH, HEIGHT = int(parameters.get("WIDTH",3200))*TIMES, int(parameters.get("HEIGHT",3200))*TIMES
+WIDTH, HEIGHT = int(parameters.get("WIDTH",3200))*TIMES, int(parameters.get("HEIGHT",1400))*TIMES
 DPI = int(parameters.get("DPI",600))
 
 # Card colour format
 BG_COLOUR = parameters.get("BG_COLOUR","white")
-FILLS = [BLAU,GRANA,BLAU]
-EDGES = [BLAU,GRANA,BLAU]
+FILLS = parameters.get("FILLS","#e36fea")
+EDGES = parameters.get("EDGES","same")
+TILE_FILL = parameters.get("TILE_FILL","#f1b5f4")
+TILE_EDGE = parameters.get("TILE_EDGE","black")
 
 # I/O files
 IMG_FOLDER = parameters.get("IMG_FOLDER","./img/")
@@ -397,7 +439,6 @@ IMG_FOLDER = IMG_FOLDER if IMG_FOLDER.endswith("/") else IMG_FOLDER + "/"
 
 SONGS_FILE = parameters.get("SONGS_FILE","songs.txt")
 OUTPUT_FOLDER = parameters.get("OUTPUT_FOLDER","./bills/")
-
 
 ####################   PARSING INPUT and PREPARATION   ####################
 
@@ -410,6 +451,10 @@ images_per_bill = generate_sublists(img_list,N_PLAYERS,N_IMAGES_CARD)
 required_images = ["fran.jpg","raquel.jpg","emma.jpg"]
 if not required_images[0].startswith(IMG_FOLDER): required_images = [IMG_FOLDER + i for i in required_images]
 if not N_IMAGES_CARD == 0: images_per_bill = ensure_elements_present(images_per_bill, required_images)
+
+FILLS,EDGES = parse_fills(FILLS,EDGES)
+# FILLS = [BLAU,GRANA,BLAU]
+# EDGES = [BLAU,GRANA,BLAU]
 
 try: os.mkdir(OUTPUT_FOLDER)
 except FileExistsError: pass
@@ -428,13 +473,14 @@ for i in range(N_PLAYERS):
 
     grid = Grid(image,metadata,NROWS,NCOLS)
     grid.set_info(song_list_i,img_list)
-    grid.fill(N_SONGS_CARD,N_IMAGES_CARD)
+    grid.fill(N_SONGS_CARD,N_IMAGES_CARD,colours=[FILLS,TILE_FILL,TILE_EDGE])
     # grid.log()
     image = grid.draw()
     image.save(f"{OUTPUT_FOLDER}/bill{i}.png",dpi=(DPI,DPI))
 
     print(i+1,flush=True, end=" ")
 
+get_winner(song_list,songs_per_bill,OUTPUT_FOLDER)
 
 tf = time.time()
 print(f"\nProcess finished in {tf-to:.2f}s")
