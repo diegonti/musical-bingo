@@ -31,11 +31,11 @@ IMG_FOLDER = img/           ! Images folder [Defaults to "./img/"]
 SONGS_FILE = songs.txt      ! Song list file, with format artist - song [Defaults to "songs.txt"]
 OUTPUT_FOLDER = bills/      ! Output folder where the card images will be created [Defaults to "./bills/"]
 
-BG_COLOUR = white           ! Background colour of the bingo card [Defaults to white]
-!FILLS =                    ! Fill background colours of the bingo card (rounded rectangles)
-!EDGES = same                ! Edge colours of the bingo card (rounded rectangles). Can be colours or "same" (same as FILLS) [Defaults to "same"]
-!TILE_FILL =            ! Song tile fill colour 
-!TILE_EDGE =            ! Song tile edge colour 
+BG_COLOUR = white                   ! Background colour of the bingo card [Defaults to white]
+FILLS = (0,100,100)/ red/ #FFFFFF   ! Fill background colours of the bingo card (rounded rectangles)
+EDGES = same                        ! Edge colours of the bingo card (rounded rectangles). Can be colours or "same" (same as FILLS) [Defaults to "same"]
+TILE_FILL =  green                  ! Song tile fill colour 
+TILE_EDGE =  black                  ! Song tile edge colour 
 
 ```
 
