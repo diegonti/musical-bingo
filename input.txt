@@ -16,6 +16,9 @@ OUTPUT_FOLDER = bills/      ! Output folder where the card images will be create
 
 BG_COLOUR = white           ! Background colour of the bingo card [Defaults to white]
 !FILLS =                    ! Fill background colours of the bingo card (rounded rectangles)
-!EDGES = same                ! Edge colours of the bingo card (rounded rectangles). Can be colours or "same" (same as FILLS) [Defaults to "same"]
-!TILE_FILL =            ! Song tile fill colour 
-!TILE_EDGE =            ! Song tile edge colour 
+!EDGES = same               ! Edge colours of the bingo card (rounded rectangles). Can be colours or "same" (same as FILLS) [Defaults to "same"]
+!TILE_FILL =                ! Song tile fill colour 
+!TILE_EDGE =                ! Song tile edge colour 
+
+! The fill/edges colours are bar (/) separated colours, and can be words, hex or rgf format. 
+! Example: (0,100,100)/ red/ #FFFFFF
