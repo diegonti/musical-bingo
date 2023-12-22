@@ -1,3 +1,14 @@
+"""
+Simple Python program to create bingo cards for Musical Bingo.
+The program works with an input file where the configuration and format of the bingo card is given.
+The program takes the given songs, images and format, and creates the specified musical bingo cards
+in an output folder, calculating the winner card.
+
+A quick way to make bingo cards for a fun night with friends and family!
+
+Diego Ontiveros - 22/12/2023
+"""
+
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 import textwrap
 
@@ -5,12 +16,26 @@ from argparse import ArgumentParser
 import numpy as np
 import random
 import time
+import shutil
 import os
 import ast
 
 
-def text_to_image(image, text,rectangle_area,font_size=30):
-    """Puts the given text in a certain rectangular area of an image."""
+def text_to_image(image, text,rectangle_area,font_size=40):
+    """
+    Puts the given text in a certain rectangular area of an image.
+
+    Parameters
+    --------------
+    `image` : PIL image object where the cards is being drawn.\n
+    `text`  : String of text to add to the image.\n
+    `rectangle_area` : (x1,y1,x2,y2) array with the 2 corners of a rectangle.\n
+    `font_size` : Text font size. Defaults to 40.
+
+    Returns
+    -------------
+    `image` : Modifyed base image with the text added.
+    """
 
     # Create an ImageDraw object
     draw = ImageDraw.Draw(image)
@@ -26,7 +51,7 @@ def text_to_image(image, text,rectangle_area,font_size=30):
     available_height = y2 - y1
 
     # Wrap the text to fit inside the available width
-    wrapped_text = textwrap.wrap(text, width=int(available_width / font_size))
+    wrapped_text = textwrap.wrap(text, width=int(available_width / font_size)+6)
 
     # Calculate the total height of the wrapped text
     total_text_height = len(wrapped_text) * font_size
@@ -51,11 +76,19 @@ def text_to_image(image, text,rectangle_area,font_size=30):
 
 
 def add_corners(im, rad=100):
-    """Adds rounded corners to an image"""
-
+    """
+    Adds rounded corners to an image. Thought for user input images.
+    
+    `im`    : PIL Image object.
+    `rad`   : Rounded border radius.
+    
+    """
+    # Creates a image with a white circle
     circle = Image.new('L', (rad * 2, rad * 2), 0)
     draw = ImageDraw.Draw(circle)
     draw.ellipse((0, 0, rad * 2, rad * 2), fill=255)
+
+    # Use the circle to create an alpha mask (for the corners to desappear)
     alpha = Image.new('L', im.size, "white")
     w, h = im.size
     alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
@@ -63,20 +96,27 @@ def add_corners(im, rad=100):
     alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
     alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
 
+    # Use the mask to elimiate the corners, leaving them round
     alpha = ImageChops.darker(alpha, im.split()[-1])
-
     im.putalpha(alpha)
+
     return im
 
 
 def tile_to_image(image,tile_path,rectangular_area):
-    """Adds tile of bingo card to the image card."""
+    """
+    Adds user image to the bingo card image, into a specified rectangle.
+
+    `image` : PIL image object where the cards is being drawn.\n
+    `tile_path` : String containing the path of the user image.\n
+    `rectangle_area` : (x1,y1,x2,y2) array with the 2 corners of a rectangle.\n
+
+    """
 
     tile = Image.open(tile_path).convert("RGBA")
-    # tile = add_corners(tile, 500)
-    rectangular_area = np.array(rectangular_area).astype(int)
 
     # Calculate the size of the rectangle area
+    rectangular_area = np.array(rectangular_area).astype(int)
     insert_width = rectangular_area[2] - rectangular_area[0]
     insert_height = rectangular_area[3] - rectangular_area[1]
 
@@ -87,11 +127,12 @@ def tile_to_image(image,tile_path,rectangular_area):
 
     # Paste the resized picture onto the main image at the specified position
     image.paste(resized_picture, tuple(rectangular_area[:2]),resized_picture)
+
     return image
 
 
 class Rectangle:
-    """Class representing a rectangular tile od the bingo card"""
+    """Class representing a rectangular tile of the bingo card"""
 
     def __init__(self, xy, text, colour, edge_colour, tile_image,image, type) -> None:
         self.xy = xy
@@ -119,6 +160,8 @@ class Rectangle:
         
 
 class Grid:
+    """Class representing the grid of the bingo card."""
+
     def __init__(self,image,metadata,NROWS,NCOLS) -> None:
         self.image = image
         self.metatada = metadata
@@ -314,7 +357,7 @@ def background(image:Image, fills:list, edges:list):
     return image, metadata
 
 
-def read_song_fie(song_file):
+def read_song_file(song_file):
     """Reads and parses song file"""  
     song_list = []
     with open(song_file,"r",encoding="utf-8") as inFile: 
@@ -338,6 +381,18 @@ def read_input(input_file):
             parameters[key.strip()] = value.strip()
 
     return parameters
+
+
+def expand_img_list(img_list, n_images_card):
+    """Repeate some images if not enough present. Warns if executed."""
+
+    if len(img_list) < n_images_card:
+        print("Warning! The number of images given is less than the number of images selected per card. Some will be repeated.")
+        for _ in range(n_images_card-len(img_list)):
+            img_list.append(img_list[0])
+    
+    return img_list
+
 
 def parse_fills(FILLS,EDGES):
     FILLS = FILLS.split("/")
@@ -387,11 +442,16 @@ def get_winner(song_list,songs_per_bill,OUTPUT_FOLDER):
         if 0 in lens:
             print(lens)
             winner = lens.index(0)
+            iteration = i
+            win_song = song
             break
 
-    print(f"Winner = bill{winner}")
+    print(f"Winner = bill{winner} at song {iteration} ({win_song})")
+    print(lens.count(0),lens.count(1))
     with open(OUTPUT_FOLDER + "winner.txt","w") as outFile:
-        outFile.write(f"Winner = bill{winner}")
+        outFile.write(f"Winner = bill{winner} at song {iteration} ({win_song})")
+
+    return winner,iteration,win_song,lens
 
 
 ########################################################################################################
@@ -400,9 +460,13 @@ def get_winner(song_list,songs_per_bill,OUTPUT_FOLDER):
 
 to = time.time()
 
-BLAU = (0,77,152)
-GRANA = (165,0,68)
-LBLUE = (175,215,255)
+# Hand-put colours
+# OUTER = "#90c4c4"
+# INNER = "white" # #9e4ae8
+# LOUTER = "#e9f3f3"
+
+SEED = random.randrange(1234567890)
+random.seed(SEED)
 
 # Parsing user arguments
 parser = ArgumentParser(
@@ -443,18 +507,25 @@ OUTPUT_FOLDER = parameters.get("OUTPUT_FOLDER","./bills/")
 ####################   PARSING INPUT and PREPARATION   ####################
 
 img_list = [IMG_FOLDER + img for img in os.listdir(IMG_FOLDER)]
-song_list = read_song_fie(SONGS_FILE)
+img_list = expand_img_list(img_list,N_IMAGES_CARD)
+song_list = read_song_file(SONGS_FILE)
 
 songs_per_bill = generate_sublists(song_list, N_PLAYERS, N_SONGS_CARD)
 images_per_bill = generate_sublists(img_list,N_PLAYERS,N_IMAGES_CARD)
 
-required_images = ["fran.jpg","raquel.jpg","emma.jpg"]
-if not required_images[0].startswith(IMG_FOLDER): required_images = [IMG_FOLDER + i for i in required_images]
-if not N_IMAGES_CARD == 0: images_per_bill = ensure_elements_present(images_per_bill, required_images)
+## Uncomment this part for assuring some images appear in all cards
+# required_images = ["test1.jpg","test2.jpg","test3.jpg","test4.jpg"]
+# if not required_images[0].startswith(IMG_FOLDER): required_images = [IMG_FOLDER + i for i in required_images]
+# if not N_IMAGES_CARD == 0: images_per_bill = ensure_elements_present(images_per_bill, required_images)
 
 FILLS,EDGES = parse_fills(FILLS,EDGES)
-# FILLS = [BLAU,GRANA,BLAU]
-# EDGES = [BLAU,GRANA,BLAU]
+
+# TILE_FILL = LOUTER
+# FILLS = [OUTER,INNER,OUTER]
+# EDGES = [OUTER,INNER,OUTER]
+
+try: shutil.rmtree(OUTPUT_FOLDER)
+except FileNotFoundError: pass
 
 try: os.mkdir(OUTPUT_FOLDER)
 except FileExistsError: pass
@@ -481,6 +552,7 @@ for i in range(N_PLAYERS):
     print(i+1,flush=True, end=" ")
 
 get_winner(song_list,songs_per_bill,OUTPUT_FOLDER)
+print("SEED = ",SEED)
 
 tf = time.time()
 print(f"\nProcess finished in {tf-to:.2f}s")
