@@ -362,7 +362,8 @@ def read_song_file(song_file):
     song_list = []
     with open(song_file,"r",encoding="utf-8") as inFile: 
         for line in inFile:
-            data = line.split("-")
+            if len(line) == 0 or line == "\n": continue
+            data = line.split(" - ")
             artist,song = data[0].strip(),data[1].strip()
             text = f"{artist} – {song}"
             song_list.append(text)
@@ -446,10 +447,10 @@ def get_winner(song_list,songs_per_bill,OUTPUT_FOLDER):
             win_song = song
             break
 
-    print(f"Winner = bill{winner} at song {iteration} ({win_song})")
+    print(f"Winner = bill{winner} at song {iteration+1} ({win_song})")
     print(lens.count(0),lens.count(1))
     with open(OUTPUT_FOLDER + "winner.txt","w") as outFile:
-        outFile.write(f"Winner = bill{winner} at song {iteration} ({win_song})")
+        outFile.write(f"Winner = bill{winner} at song {iteration+1} ({win_song})")
 
     return winner,iteration,win_song,lens
 
@@ -461,9 +462,9 @@ def get_winner(song_list,songs_per_bill,OUTPUT_FOLDER):
 to = time.time()
 
 # Hand-put colours
-# OUTER = "#90c4c4"
+# OUTER = "#84d5f5"
 # INNER = "white" # #9e4ae8
-# LOUTER = "#e9f3f3"
+# LOUTER = "#d9edfa"
 
 SEED = random.randrange(1234567890)
 random.seed(SEED)
